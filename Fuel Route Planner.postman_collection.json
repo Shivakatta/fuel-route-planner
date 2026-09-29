@@ -1,0 +1,118 @@
+{
+  "info": {
+    "name": "Fuel Route Planner - Local Test",
+    "description": "Test the local Django route API and its basic input validation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Plan Tulsa to Oklahoma City",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"start\": \"Tulsa, Oklahoma, USA\",\n  \"finish\": \"Oklahoma City, Oklahoma, USA\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/route/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "route"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Returns HTTP 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const result = pm.response.json();",
+              "pm.test('Contains route geometry and fuel plan', function () {",
+              "    pm.expect(result.route.geometry.type).to.eql('LineString');",
+              "    pm.expect(result.route.geometry.coordinates.length).to.be.above(1);",
+              "    pm.expect(result.fuel_plan.stops).to.be.an('array');",
+              "});",
+              "pm.test('Uses assignment vehicle assumptions and returns cost', function () {",
+              "    pm.expect(result.fuel_plan.vehicle_range_miles).to.eql(500);",
+              "    pm.expect(result.fuel_plan.miles_per_gallon).to.eql(10);",
+              "    pm.expect(result.fuel_plan.estimated_total_cost_usd).to.be.a('number');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reject missing start location",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"finish\": \"Oklahoma City, Oklahoma, USA\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/route/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "route"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Returns HTTP 400 for missing start', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test('Explains the validation error', function () {",
+              "    pm.expect(pm.response.json().error).to.include('start');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
